@@ -10,7 +10,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Format Check
-    - run: cargo fmt -- --check
+      run: cargo fmt -- --check
     - name: Run tests
       run: cargo test --verbose
     - name: IRC Message Action
