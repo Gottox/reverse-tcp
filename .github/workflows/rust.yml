@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Versions
+      run: cargo --versions; rustc --version
     - name: Build
       run: cargo build --verbose
     - name: Format Check
@@ -19,4 +21,4 @@ jobs:
       with:
         channel: "##gottox"
         nickname: gh-gottox
-        message: "Gottox: failure on push ${{ github.event.compare }}"
+        message: "Gottox: https://github.com/${{ github.repository }} failed on push ${{ github.event.compare }}"
