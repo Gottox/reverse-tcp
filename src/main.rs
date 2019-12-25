@@ -28,7 +28,7 @@ async fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            print!("{}\n", f.to_string());
+            println!("{}", f.to_string());
             return usage(&program, &opts);
         }
     };
@@ -42,7 +42,7 @@ async fn main() {
             psk: matches
                 .opt_str("psk")
                 .map(|x| x.into_bytes())
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
             reverse_port: matches.free[1].to_owned(),
             target: matches.free[2].to_owned(),
         })
@@ -52,7 +52,7 @@ async fn main() {
             psk: matches
                 .opt_str("psk")
                 .map(|x| x.into_bytes())
-                .unwrap_or(vec![]),
+                .unwrap_or_else(|| vec![]),
             reverse_server: matches.free[1].to_owned(),
             target: matches.free[2].to_owned(),
         })

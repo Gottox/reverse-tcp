@@ -29,7 +29,7 @@ pub struct Connected;
 
 pub fn from_stream(stream: TcpStream) -> Protocol<Unauthenticated> {
     Protocol {
-        stream: stream,
+        stream,
         state: Unauthenticated {},
     }
 }
