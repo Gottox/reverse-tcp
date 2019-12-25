@@ -1,0 +1,23 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: cargo build --verbose
+    - name: Format Check
+    - run: cargo fmt -- --check
+    - name: Run tests
+      run: cargo test --verbose
+    - name: IRC Message Action
+      uses: Gottox/irc-message-action@master
+      if: failure()
+      with:
+        channel: ##gottox
+        # IRC nickname
+        nickname: gh-gottox
+        message: "Gottox: failure on push ${{ github.event.compare }}"
