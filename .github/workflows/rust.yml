@@ -17,7 +17,6 @@ jobs:
       uses: Gottox/irc-message-action@master
       if: failure()
       with:
-        channel: ##gottox
-        # IRC nickname
+        channel: "##gottox"
         nickname: gh-gottox
         message: "Gottox: failure on push ${{ github.event.compare }}"
