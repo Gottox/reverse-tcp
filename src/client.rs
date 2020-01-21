@@ -11,7 +11,10 @@ pub struct ClientConfig {
 }
 
 pub async fn handle_connection(
-    proxy: Result<protocol::Protocol<TcpStream, protocol::Authenticated>, Box<dyn Error + Send + Sync>>,
+    proxy: Result<
+        protocol::Protocol<TcpStream, protocol::Authenticated>,
+        Box<dyn Error + Send + Sync>,
+    >,
     config: &ClientConfig,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     if proxy.is_err() {

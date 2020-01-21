@@ -1,14 +1,12 @@
-use std::error::Error;
 use futures::future::{select, Either};
+use std::error::Error;
 use tokio::io;
 use tokio::io::{AsyncRead, AsyncWrite};
 
-pub async fn transfer<T1, T2>(
-    mut s1: T1,
-    mut s2: T2,
-) -> Result<(), Box<dyn Error + Send + Sync>>
-where T1: AsyncRead + AsyncWrite + Unpin,
-      T2: AsyncRead + AsyncWrite + Unpin,
+pub async fn transfer<T1, T2>(mut s1: T1, mut s2: T2) -> Result<(), Box<dyn Error + Send + Sync>>
+where
+    T1: AsyncRead + AsyncWrite + Unpin,
+    T2: AsyncRead + AsyncWrite + Unpin,
 {
     let (mut r1, mut w1) = io::split(&mut s1);
     let (mut r2, mut w2) = io::split(&mut s2);

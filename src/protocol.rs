@@ -3,12 +3,12 @@ use crate::io_utils::transfer;
 use futures::try_join;
 use std::error::Error;
 use std::fmt;
-use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::io;
-use tokio_timer::Timeout;
 use std::marker::PhantomData;
+use std::time::Duration;
+use tokio::io;
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio_timer::Timeout;
 
 #[derive(Debug)]
 pub struct ProtocolError;
@@ -21,8 +21,10 @@ impl fmt::Display for ProtocolError {
     }
 }
 
-pub struct Protocol<S, M> 
-where S: AsyncRead + AsyncWrite {
+pub struct Protocol<S, M>
+where
+    S: AsyncRead + AsyncWrite,
+{
     stream: S,
     state: PhantomData<M>,
 }
@@ -31,7 +33,8 @@ pub struct Authenticated;
 pub struct Connected;
 
 pub fn from_stream<S>(stream: S) -> Protocol<S, Unauthenticated>
-where S: AsyncRead + AsyncWrite
+where
+    S: AsyncRead + AsyncWrite,
 {
     Protocol {
         stream,
@@ -40,7 +43,9 @@ where S: AsyncRead + AsyncWrite
 }
 
 impl<S> Protocol<S, Unauthenticated>
-where S: AsyncRead + AsyncWrite + Unpin {
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
     pub async fn authenticate(
         mut self: Self,
         psk: &[u8],
@@ -76,7 +81,9 @@ where S: AsyncRead + AsyncWrite + Unpin {
 }
 
 impl<S> Protocol<S, Authenticated>
-where S: AsyncRead + AsyncWrite + Unpin {
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
     pub async fn wait_for_connection(
         mut self: Self,
     ) -> Result<Protocol<S, Connected>, Box<dyn Error + Send + Sync>> {
@@ -106,12 +113,15 @@ where S: AsyncRead + AsyncWrite + Unpin {
 }
 
 impl<S> Protocol<S, Connected>
-where S: AsyncRead + AsyncWrite + Unpin {
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
     pub async fn proxy_for<S2>(
         self: Self,
         other_stream: S2,
     ) -> Result<(), Box<dyn Error + Send + Sync>>
-    where S2: AsyncRead + AsyncWrite + Unpin
+    where
+        S2: AsyncRead + AsyncWrite + Unpin,
     {
         transfer(self.stream, other_stream).await
     }
