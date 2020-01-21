@@ -7,6 +7,7 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_timer::Timeout;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct ProtocolError;
@@ -21,7 +22,7 @@ impl fmt::Display for ProtocolError {
 
 pub struct Protocol<T> {
     stream: TcpStream,
-    state: T,
+    state: PhantomData<T>,
 }
 pub struct Unauthenticated;
 pub struct Authenticated;
@@ -30,7 +31,7 @@ pub struct Connected;
 pub fn from_stream(stream: TcpStream) -> Protocol<Unauthenticated> {
     Protocol {
         stream,
-        state: Unauthenticated {},
+        state: PhantomData::<Unauthenticated>,
     }
 }
 
@@ -58,7 +59,7 @@ impl Protocol<Unauthenticated> {
         match my_challenge.to_response().check(&remote_response) {
             Ok(_) => Ok(Protocol {
                 stream: self.stream,
-                state: Authenticated,
+                state: PhantomData::<Authenticated>,
             }),
             Err(e) => {
                 let _ =
@@ -82,7 +83,7 @@ impl Protocol<Authenticated> {
 
         Ok(Protocol {
             stream: self.stream,
-            state: Connected,
+            state: PhantomData::<Connected>,
         })
     }
 
@@ -93,7 +94,7 @@ impl Protocol<Authenticated> {
 
         Ok(Protocol {
             stream: self.stream,
-            state: Connected,
+            state: PhantomData::<Connected>,
         })
     }
 }
