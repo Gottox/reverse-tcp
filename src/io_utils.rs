@@ -1,23 +1,25 @@
-use futures::future::select;
 use std::error::Error;
-use std::net::Shutdown;
+use futures::future::{select, Either};
 use tokio::io;
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncWrite};
 
-pub async fn transfer(
-    mut s1: TcpStream,
-    mut s2: TcpStream,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let (mut r1, mut w1) = s1.split();
-    let (mut r2, mut w2) = s2.split();
+pub async fn transfer<T1, T2>(
+    mut s1: T1,
+    mut s2: T2,
+) -> Result<(), Box<dyn Error + Send + Sync>>
+where T1: AsyncRead + AsyncWrite + Unpin,
+      T2: AsyncRead + AsyncWrite + Unpin,
+{
+    let (mut r1, mut w1) = io::split(&mut s1);
+    let (mut r2, mut w2) = io::split(&mut s2);
 
     let from_1_to_2 = io::copy(&mut r1, &mut w2);
     let from_2_to_1 = io::copy(&mut r2, &mut w1);
 
-    let (result, _) = select(from_1_to_2, from_2_to_1).await.into_inner();
-    s1.shutdown(Shutdown::Both)?;
-    s2.shutdown(Shutdown::Both)?;
-    result?;
+    match select(from_1_to_2, from_2_to_1).await {
+        Either::Left((x, _)) => x,
+        Either::Right((x, _)) => x,
+    }?;
 
     Ok(())
 }
