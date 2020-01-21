@@ -5,7 +5,8 @@ use std::error::Error;
 use std::fmt;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io;
 use tokio_timer::Timeout;
 use std::marker::PhantomData;
 
@@ -20,27 +21,31 @@ impl fmt::Display for ProtocolError {
     }
 }
 
-pub struct Protocol<T> {
-    stream: TcpStream,
-    state: PhantomData<T>,
+pub struct Protocol<S, M> 
+where S: AsyncRead + AsyncWrite {
+    stream: S,
+    state: PhantomData<M>,
 }
 pub struct Unauthenticated;
 pub struct Authenticated;
 pub struct Connected;
 
-pub fn from_stream(stream: TcpStream) -> Protocol<Unauthenticated> {
+pub fn from_stream<S>(stream: S) -> Protocol<S, Unauthenticated>
+where S: AsyncRead + AsyncWrite
+{
     Protocol {
         stream,
         state: PhantomData::<Unauthenticated>,
     }
 }
 
-impl Protocol<Unauthenticated> {
+impl<S> Protocol<S, Unauthenticated>
+where S: AsyncRead + AsyncWrite + Unpin {
     pub async fn authenticate(
         mut self: Self,
         psk: &[u8],
-    ) -> Result<Protocol<Authenticated>, Box<dyn Error + Send + Sync>> {
-        let (mut rev_read, mut rev_write) = self.stream.split();
+    ) -> Result<Protocol<S, Authenticated>, Box<dyn Error + Send + Sync>> {
+        let (mut rev_read, mut rev_write) = io::split(&mut self.stream);
 
         let my_challenge = Challenge::create(&psk)?;
 
@@ -70,10 +75,11 @@ impl Protocol<Unauthenticated> {
     }
 }
 
-impl Protocol<Authenticated> {
+impl<S> Protocol<S, Authenticated>
+where S: AsyncRead + AsyncWrite + Unpin {
     pub async fn wait_for_connection(
         mut self: Self,
-    ) -> Result<Protocol<Connected>, Box<dyn Error + Send + Sync>> {
+    ) -> Result<Protocol<S, Connected>, Box<dyn Error + Send + Sync>> {
         let mut magic_bytes = [0; 7];
         self.stream.read_exact(&mut magic_bytes).await?;
 
@@ -89,7 +95,7 @@ impl Protocol<Authenticated> {
 
     pub async fn connection_available(
         mut self: Self,
-    ) -> Result<Protocol<Connected>, Box<dyn Error + Send + Sync>> {
+    ) -> Result<Protocol<S, Connected>, Box<dyn Error + Send + Sync>> {
         self.stream.write(b"connect").await?;
 
         Ok(Protocol {
@@ -99,11 +105,14 @@ impl Protocol<Authenticated> {
     }
 }
 
-impl Protocol<Connected> {
-    pub async fn proxy_for(
+impl<S> Protocol<S, Connected>
+where S: AsyncRead + AsyncWrite + Unpin {
+    pub async fn proxy_for<S2>(
         self: Self,
-        other_stream: TcpStream,
-    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        other_stream: S2,
+    ) -> Result<(), Box<dyn Error + Send + Sync>>
+    where S2: AsyncRead + AsyncWrite + Unpin
+    {
         transfer(self.stream, other_stream).await
     }
 }
